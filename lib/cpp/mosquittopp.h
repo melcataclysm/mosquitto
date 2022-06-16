@@ -29,6 +29,7 @@ Contributors:
 
 #include <cstdlib>
 #include <mosquitto.h>
+#include <mqtt_protocol.h>
 #include <time.h>
 
 namespace mosqpp {
@@ -83,13 +84,15 @@ mosqpp_EXPORT int subscribe_callback(
 class mosqpp_EXPORT mosquittopp {
 	private:
 		struct mosquitto *m_mosq;
+		bool m_proto_v5;
 	public:
-		mosquittopp(const char *id=NULL, bool clean_session=true);
+		mosquittopp(const char *id=NULL, bool clean_session=true, bool proto_v5=false);
 		virtual ~mosquittopp();
 
 		int reinitialise(const char *id, bool clean_session);
 		int socket();
 		int will_set(const char *topic, int payloadlen=0, const void *payload=NULL, int qos=0, bool retain=false);
+		int will_set_v5(const char *topic, int payloadlen=0, const void *payload=NULL, int qos=0, bool retain=false, mosquitto_property *properties=NULL);
 		int will_clear();
 		int username_pw_set(const char *username, const char *password=NULL);
 		int connect(const char *host, int port=1883, int keepalive=60);
@@ -99,9 +102,13 @@ class mosqpp_EXPORT mosquittopp {
 		int reconnect();
 		int reconnect_async();
 		int disconnect();
+		int disconnect_v5(int reason_code=0, const mosquitto_property *properties=NULL);
 		int publish(int *mid, const char *topic, int payloadlen=0, const void *payload=NULL, int qos=0, bool retain=false);
+		int publish_v5(int *mid, const char *topic, int payloadlen=0, const void *payload=NULL, int qos=0, bool retain=false, mosquitto_property *properties=NULL);
 		int subscribe(int *mid, const char *sub, int qos=0);
+		int subscribe_v5(int *mid, const char *sub, int qos=0, int options=0, const mosquitto_property *properties=NULL);
 		int unsubscribe(int *mid, const char *sub);
+		int unsubscribe_v5(int *mid, const char *sub, mosquitto_property *properties=NULL);
 		void reconnect_delay_set(unsigned int reconnect_delay, unsigned int reconnect_delay_max, bool reconnect_exponential_backoff);
 		int max_inflight_messages_set(unsigned int max_inflight_messages);
 		void message_retry_set(unsigned int message_retry);
@@ -125,12 +132,18 @@ class mosqpp_EXPORT mosquittopp {
 
 		// names in the functions commented to prevent unused parameter warning
 		virtual void on_connect(int /*rc*/) {return;}
+		virtual void on_connect_v5(int /*rc*/, int /*flags*/, const mosquitto_property* /* props*/) {return;}
 		virtual void on_connect_with_flags(int /*rc*/, int /*flags*/) {return;}
 		virtual void on_disconnect(int /*rc*/) {return;}
+		virtual void on_disconnect_v5(int /*rc*/, const mosquitto_property* /* props*/) {return;}
 		virtual void on_publish(int /*mid*/) {return;}
+		virtual void on_publish_v5(int /*mid*/, int /*reason_code*/, const mosquitto_property* /* props*/) {return;}
 		virtual void on_message(const struct mosquitto_message * /*message*/) {return;}
+		virtual void on_message_v5(const struct mosquitto_message * /*message*/, const mosquitto_property* /* props*/) {return;}
 		virtual void on_subscribe(int /*mid*/, int /*qos_count*/, const int * /*granted_qos*/) {return;}
+		virtual void on_subscribe_v5(int /*mid*/, int /*qos_count*/, const int * /*granted_qos*/, const mosquitto_property* /* props*/) {return;}
 		virtual void on_unsubscribe(int /*mid*/) {return;}
+		virtual void on_unsubscribe_v5(int /*mid*/, const mosquitto_property* /* props*/) {return;}
 		virtual void on_log(int /*level*/, const char * /*str*/) {return;}
 		virtual void on_error() {return;}
 };
